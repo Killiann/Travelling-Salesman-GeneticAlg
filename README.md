@@ -1,3 +1,3 @@
 # Travelling-Salesman-GeneticAlg
 
-Travelling Salesman with genetic algorithm solution
+Travelling Salesman solved with genetic algorithm
