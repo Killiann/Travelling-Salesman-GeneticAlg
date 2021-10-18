@@ -8,7 +8,7 @@ class Node
 	int ID;
 	sf::Vector2f location;
 	sf::CircleShape drawable;
-	const float radius = 10.f;
+	const float radius = 7.f;
 	const sf::Color color = sf::Color::Green;	
 
 public:
@@ -16,13 +16,13 @@ public:
 		drawable.setFillColor(color);
 		drawable.setPosition(loc);
 		drawable.setOrigin(radius, radius);
-		drawable.setPosition(loc);
 		drawable.setRadius(radius);
 	};
-	Node(){}
+	Node() :ID(-1), location(sf::Vector2f(0,0)){
+	}
 	inline int GetID() { return ID; }
 	inline sf::Vector2f GetPosition() { return location; }
-	inline void Draw(sf::RenderWindow &w) { w.draw(drawable); };
+	inline void Draw(sf::RenderWindow &w) { w.draw(drawable); }
 
 	inline void operator=(Node n) { 
 		ID = n.ID; 
@@ -41,7 +41,7 @@ class Edge {
 	float distance;
 
 	lin::Line line;
-	float lineWidth = 2.f;
+	float lineWidth = 1.f;
 	sf::Color color = sf::Color::Blue;
 
 public:

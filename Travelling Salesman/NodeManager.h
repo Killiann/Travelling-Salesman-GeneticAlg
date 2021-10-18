@@ -19,7 +19,11 @@ public:
 	void operator=(Route r2);
 	inline float GetDistance() { return distance; }
 
-	inline std::vector<Node> GetNodes() { return nodes; }
+	inline std::vector<Node> GetNodes() {
+	
+		std::vector<Node> n = nodes;
+		return n; 
+	}
 	inline void SetNodes(std::vector<Node> n) { nodes = n; }
 };
 

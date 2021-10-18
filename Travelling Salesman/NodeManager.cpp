@@ -6,7 +6,7 @@ void Route::BuildRoute() {
 	for (int i = 0; i < nodes.size() - 1; ++i) {
 		Edge e = Edge(nodes[i], nodes[i + 1]);
 		e.SetColor(sf::Color::Red);
-		e.SetWidth(7.f);
+		e.SetWidth(5.f);
 		drawable.push_back(e);
 
 		sum += e.GetDistance();

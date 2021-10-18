@@ -5,17 +5,12 @@
 #include "Node.h"
 #include "NodeManager.h"
 
-const int nodeCount = 30;
+const int nodeCount = 25;
 const int populationSize = 50;
 
 const int windowWidth = 1200, windowHeight = 800;
 const int displayWidth = 1200, displayHeight = 800;
 const int padding = 50;
-
-Route bestRoute;
-std::vector<Node> nodes;
-std::vector<Edge> edges;
-std::vector<Route> routes;
 
 int GetRandom(int min, int max) {
     //rng setup
@@ -26,7 +21,7 @@ int GetRandom(int min, int max) {
     return gen(rng);
 }
 
-void Rank() {
+void Rank(std::vector<Route> &routes) {
     bool solved = false;
 
     while (!solved) {
@@ -43,7 +38,7 @@ void Rank() {
     }
 }
 
-void reset() {
+void reset(std::vector<Node> &nodes, std::vector<Edge> &edges, std::vector<Route> &routes, Route &bestRoute) {
     nodes.clear(); edges.clear(); routes.clear();
     
     //generate nodes
@@ -85,12 +80,63 @@ void reset() {
 
         routes.push_back(r);
     }
-    Rank();
+    Rank(routes);    
+    bestRoute = routes[0];
+}
+
+void ResetToCircle(std::vector<Node>& nodes, std::vector<Edge>& edges, std::vector<Route>& routes, Route& bestRoute) {
+    nodes.clear(); edges.clear(); routes.clear();
+    float angle = 0.f;
+    float division = (2*M_PI) / ((float)nodeCount);
+    int radius = 350;
+    for (int i = 0; i < nodeCount; ++i) {
+        int x = (radius * cos(angle)) + (displayWidth / 2);
+        int y = (radius * sin(angle)) + (displayHeight / 2);
+
+        Node n = Node(sf::Vector2f(x, y), i);
+        nodes.push_back(n);
+        angle += division;
+    }
+
+    //generate edges
+    for (int i = 0; i < nodes.size(); ++i) {
+        for (int j = 0; j < nodes.size(); ++j) {
+            bool exists = false;
+            for (int e = 0; e < edges.size(); ++e) {
+
+                if (edges[e].DoesConnect(nodes[i], nodes[j])) exists = true;
+            }
+            if (!exists) {
+                Edge edge = Edge(nodes[i], nodes[j]);
+                edges.push_back(edge);
+            }
+        }
+    }
+
+    //setup routes
+    for (int i = 0; i < populationSize; ++i) {
+        Route r = Route();
+        std::vector<Node> nCopy = nodes;
+
+        int idx = GetRandom(0, nCopy.size() - 1);
+        r.AddNode(nCopy[idx]);
+        Node first = nCopy[idx];
+        nCopy.erase(nCopy.begin() + idx);
+
+        while (nCopy.size() > 0) {
+            idx = GetRandom(0, nCopy.size() - 1);
+            r.AddNode(nCopy[idx]);
+            nCopy.erase(nCopy.begin() + idx);
+        }
+
+        routes.push_back(r);
+    }
+    Rank(routes);
     bestRoute = routes[0];
 }
 
 //Genetic Algorith solution
-void SolveWithGA() {
+void SolveWithGA(std::vector<Route> &routes) {
     //get top 10%;
     std::vector<Route> topRoutes(routes.begin(), routes.begin() + (populationSize / 10));
 
@@ -102,8 +148,15 @@ void SolveWithGA() {
         while (id1 == id2)
             id2 = GetRandom(0, topRoutes.size() - 1);
 
-        std::vector<Node> nodes1 = topRoutes[id1].GetNodes();
-        std::vector<Node> nodes2 = topRoutes[id2].GetNodes();
+        int size = topRoutes[id1].GetNodes().size();
+        std::vector<Node> nodes1;
+        std::vector<Node> nodes2;
+
+        nodes1.reserve(topRoutes[id1].GetNodes().size());
+        nodes2.reserve(topRoutes[id1].GetNodes().size());
+        
+        nodes2 = topRoutes[id1].GetNodes();
+        nodes1 = topRoutes[id2].GetNodes();
 
         int idx1 = GetRandom(0, nodes1.size() - 1);
         int idx2 = idx1;
@@ -155,13 +208,19 @@ void SolveWithGA() {
         }
     }
 
-    Rank();
+    Rank(routes);
 }
 
 int main()
 {
-    sf::RenderWindow window(sf::VideoMode(windowWidth, windowHeight), "Travelling Salesman Problem");        
-    reset();           
+    sf::RenderWindow window(sf::VideoMode(windowWidth, windowHeight), "Travelling Salesman Problem");   
+
+    static Route bestRoute, prevBest;
+    static std::vector<Node> nodes;
+    static std::vector<Edge> edges;
+    static std::vector<Route> routes;
+
+    ResetToCircle(nodes, edges, routes, bestRoute);           
     bool started = false;
     while (window.isOpen())
     {
@@ -174,19 +233,23 @@ int main()
             if (event.type == sf::Event::KeyPressed) {    
                 if (event.key.code == sf::Keyboard::R) {
 
-                    reset();                    
+                    reset(nodes, edges, routes, bestRoute);
                     std::cout << "Points reset. Route Distance: " << bestRoute.GetDistance() <<"\n";
                 }
             }            
         }        
         
-        if (started) SolveWithGA();
+        if (started) SolveWithGA(routes);
 
         window.clear(sf::Color::White);
 
         if (bestRoute.GetDistance() > routes[0].GetDistance())bestRoute = routes[0];
         bestRoute.BuildRoute();
-        std::cout << "\nbest distance: " << bestRoute.GetDistance();
+
+        if (bestRoute.GetDistance() != prevBest.GetDistance()) {
+            std::cout << "\nbest distance: " << bestRoute.GetDistance();
+            prevBest = bestRoute;
+        }
        
         for (auto& e : edges) { e.Draw(window); }
         bestRoute.Draw(window);
