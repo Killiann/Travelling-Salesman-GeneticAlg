@@ -9,86 +9,34 @@ const int nodeCount = 25;
 const int populationSize = 50;
 
 const int windowWidth = 1200, windowHeight = 800;
-const int displayWidth = 1200, displayHeight = 800;
+const int displayWidth = 800, displayHeight = 600;
 const int padding = 50;
+const float radius = 250;
 
-int GetRandom(int min, int max) {
-    //rng setup
-    std::random_device dev;
-    std::mt19937 rng(dev());
+std::random_device dev;
+std::mt19937 rng(dev());
+
+template<typename T>
+void Swap(T& x, T& y) { T temp = y; y = x; x = temp; }
+
+int GetRandom(int min, int max) {    
     std::uniform_int_distribution<std::mt19937::result_type> gen(min, max);
-
     return gen(rng);
 }
 
-void Rank(std::vector<Route> &routes) {
-    bool solved = false;
-
-    while (!solved) {
-        bool tempSolved = true;
-        for (int i = 0; i < routes.size() - 1; ++i) {
-            if (routes[i].GetDistance() > routes[i + 1].GetDistance()) {
-                Route temp = routes[i];
-                routes[i] = routes[i + 1];
-                routes[i + 1] = temp;
-                tempSolved = false;
-            }
-        }
-        solved = tempSolved;
-    }
-}
-
-void reset(std::vector<Node> &nodes, std::vector<Edge> &edges, std::vector<Route> &routes, Route &bestRoute) {
-    nodes.clear(); edges.clear(); routes.clear();
-    
+void GenerateRandomNodes(std::vector<Node>& nodes) {
+    nodes.clear();
     //generate nodes
     for (int i = 0; i < nodeCount; ++i) {
         Node n = Node(sf::Vector2f(GetRandom(padding, displayWidth - padding), GetRandom(padding, displayHeight - padding)), i);
         nodes.push_back(n);
     }
-
-    //generate edges
-    for (int i = 0; i < nodes.size(); ++i) {
-        for (int j = 0; j < nodes.size(); ++j) {
-            bool exists = false;
-            for (int e = 0; e < edges.size(); ++e) {
-
-                if (edges[e].DoesConnect(nodes[i], nodes[j])) exists = true;
-            }
-            if (!exists) {
-                Edge edge = Edge(nodes[i], nodes[j]);
-                edges.push_back(edge);
-            }
-        }
-    }
-
-    //setup routes
-    for (int i = 0; i < populationSize; ++i) {
-        Route r = Route();
-        std::vector<Node> nCopy = nodes;
-
-        int idx = GetRandom(0, nCopy.size() - 1);
-        r.AddNode(nCopy[idx]);
-        Node first = nCopy[idx];
-        nCopy.erase(nCopy.begin() + idx);
-
-        while (nCopy.size() > 0) {
-            idx = GetRandom(0, nCopy.size() - 1);
-            r.AddNode(nCopy[idx]);
-            nCopy.erase(nCopy.begin() + idx);
-        }
-
-        routes.push_back(r);
-    }
-    Rank(routes);    
-    bestRoute = routes[0];
 }
 
-void ResetToCircle(std::vector<Node>& nodes, std::vector<Edge>& edges, std::vector<Route>& routes, Route& bestRoute) {
-    nodes.clear(); edges.clear(); routes.clear();
+void GenerateCircle(std::vector<Node>& nodes) {
+    nodes.clear();
     float angle = 0.f;
-    float division = (2*M_PI) / ((float)nodeCount);
-    int radius = 350;
+    float division = (2 * M_PI) / ((float)nodeCount);
     for (int i = 0; i < nodeCount; ++i) {
         int x = (radius * cos(angle)) + (displayWidth / 2);
         int y = (radius * sin(angle)) + (displayHeight / 2);
@@ -97,6 +45,10 @@ void ResetToCircle(std::vector<Node>& nodes, std::vector<Edge>& edges, std::vect
         nodes.push_back(n);
         angle += division;
     }
+}
+
+void Reset(std::vector<Node> &nodes, std::vector<Edge> &edges, std::vector<Route> &routes, Route &bestRoute) {
+    edges.clear(); routes.clear();        
 
     //generate edges
     for (int i = 0; i < nodes.size(); ++i) {
@@ -131,7 +83,7 @@ void ResetToCircle(std::vector<Node>& nodes, std::vector<Edge>& edges, std::vect
 
         routes.push_back(r);
     }
-    Rank(routes);
+    std::sort(routes.begin(), routes.end());    
     bestRoute = routes[0];
 }
 
@@ -143,72 +95,60 @@ void SolveWithGA(std::vector<Route> &routes) {
     //create new generation using parents
     routes.clear();
     for (int i = 0; i < populationSize; ++i) {
+        //pick two random parents + fetch nodes
         int id1 = GetRandom(0, topRoutes.size() - 1);
         int id2 = id1;
         while (id1 == id2)
             id2 = GetRandom(0, topRoutes.size() - 1);
 
-        int size = topRoutes[id1].GetNodes().size();
-        std::vector<Node> nodes1;
-        std::vector<Node> nodes2;
-
-        nodes1.reserve(topRoutes[id1].GetNodes().size());
-        nodes2.reserve(topRoutes[id1].GetNodes().size());
-        
-        nodes2 = topRoutes[id1].GetNodes();
-        nodes1 = topRoutes[id2].GetNodes();
-
-        int idx1 = GetRandom(0, nodes1.size() - 1);
-        int idx2 = idx1;
-        while (idx2 == idx1)
-            idx2 = GetRandom(0, nodes1.size() - 1);
-
+        std::vector<Node> nodes1 = topRoutes[id1].GetNodes();
+        std::vector<Node> nodes2 = topRoutes[id2].GetNodes();;
         std::vector<Node> result(nodes1.size());
-        if (idx1 > idx2) {
-            int temp = idx1;
-            idx1 = idx2;
-            idx2 = temp;
-        }
 
-        //copy first section
-        for (int i = idx1; i <= idx2; ++i) {
-            result[i] = nodes1[i];
-        }
+        //pick random range to take from nodes1
+        id1 = GetRandom(0, nodes1.size() - 1);
+        id2 = id1;
+        while (id2 == id1)
+            id2 = GetRandom(0, nodes1.size() - 1);
+        
+        if (id1 > id2) 
+            Swap(id1, id2);
+
+        //copy first section into result
+        for (int i = id1; i <= id2; ++i)  result[i] = nodes1[i];
+        
         //fill with remaining
-        for (int i = 0; i < result.size(); ++i) {
-            if (i < idx1 || i > idx2) {
+        for (int x = 0; x < result.size(); ++x) {
+            if (x < id1 || x > id2) {
                 bool found = false;
                 int n = 0;
                 while (!found && n < nodes2.size()) {
                     if (std::find(result.begin(), result.end(), nodes2[n]) == result.end()) {
-                        result[i] = nodes2[n];
+                        result[x] = nodes2[n];
                         found = true;
                     }
                     n++;
                 }
             }
         }
-
         routes.emplace_back(result);
     }
 
     //mutate
     for (int i = 0; i < routes.size(); ++i) {
-        if (GetRandom(0, 1000) < 500) { //0.5%
+        if (GetRandom(0, 1000) < 500) { // 50%
             std::vector<Node> n = routes[i].GetNodes();
-            int idx1 = GetRandom(0, n.size() - 1);
-            int idx2 = idx1;
-            while (idx1 == idx2)
-                idx2 = GetRandom(0, n.size() - 1);
+            int id1 = GetRandom(0, n.size() - 1);
+            int id2 = id1;
+            while (id1 == id2)
+                id2 = GetRandom(0, n.size() - 1);
 
-            Node temp = n[idx1];
-            n[idx1] = n[idx2];
-            n[idx2] = temp;
+            Swap(n[id1], n[id2]);
             routes[i].SetNodes(n);           
         }
     }
 
-    Rank(routes);
+    std::sort(routes.begin(), routes.end());
 }
 
 int main()
@@ -220,7 +160,10 @@ int main()
     static std::vector<Edge> edges;
     static std::vector<Route> routes;
 
-    ResetToCircle(nodes, edges, routes, bestRoute);           
+    GenerateCircle(nodes);
+    Reset(nodes, edges, routes, bestRoute);
+    prevBest = bestRoute;
+
     bool started = false;
     while (window.isOpen())
     {
@@ -232,30 +175,31 @@ int main()
             
             if (event.type == sf::Event::KeyPressed) {    
                 if (event.key.code == sf::Keyboard::R) {
-
-                    reset(nodes, edges, routes, bestRoute);
-                    std::cout << "Points reset. Route Distance: " << bestRoute.GetDistance() <<"\n";
+                    //reset
+                    GenerateRandomNodes(nodes);
+                    Reset(nodes, edges, routes, bestRoute);
+                    prevBest = bestRoute;
+                    std::cout << "\n\nPoints reset. Current best distance: " << bestRoute.GetDistance() <<"\n";
                 }
             }            
         }        
         
+        //solve
         if (started) SolveWithGA(routes);
-
-        window.clear(sf::Color::White);
-
         if (bestRoute.GetDistance() > routes[0].GetDistance())bestRoute = routes[0];
         bestRoute.BuildRoute();
-
-        if (bestRoute.GetDistance() != prevBest.GetDistance()) {
+        if (bestRoute.GetDistance() < prevBest.GetDistance()) {
             std::cout << "\nbest distance: " << bestRoute.GetDistance();
             prevBest = bestRoute;
         }
        
+        //draw
+        window.clear(sf::Color::White);
         for (auto& e : edges) { e.Draw(window); }
         bestRoute.Draw(window);
-        for (auto& n : nodes) { n.Draw(window); }        
-       
+        for (auto& n : nodes) { n.Draw(window); }               
         window.display();
+
         if(!started) started = true;
     }
 

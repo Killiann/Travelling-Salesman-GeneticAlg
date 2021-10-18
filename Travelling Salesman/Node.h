@@ -18,8 +18,7 @@ public:
 		drawable.setOrigin(radius, radius);
 		drawable.setRadius(radius);
 	};
-	Node() :ID(-1), location(sf::Vector2f(0,0)){
-	}
+	Node() :ID(-1), location(sf::Vector2f(0,0)){}
 	inline int GetID() { return ID; }
 	inline sf::Vector2f GetPosition() { return location; }
 	inline void Draw(sf::RenderWindow &w) { w.draw(drawable); }
@@ -32,7 +31,7 @@ public:
 
 	inline bool operator==(Node n) {
 		return ID == n.ID;
-	}
+	}	
 };
 
 class Edge {

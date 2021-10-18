@@ -20,16 +20,15 @@ public:
 	inline float GetDistance() { return distance; }
 
 	inline std::vector<Node> GetNodes() {
-	
+
 		std::vector<Node> n = nodes;
-		return n; 
+		return n;
 	}
 	inline void SetNodes(std::vector<Node> n) { nodes = n; }
+	inline bool operator<(const Route& r) const {
+		return (distance < r.distance);
+	}	
 };
 
-class NodeManager
-{
-	
-};
 
 

@@ -152,7 +152,6 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="linearAlgebra.cpp" />
-    <ClCompile Include="Node.cpp" />
     <ClCompile Include="NodeManager.cpp" />
     <ClCompile Include="Source.cpp" />
   </ItemGroup>
