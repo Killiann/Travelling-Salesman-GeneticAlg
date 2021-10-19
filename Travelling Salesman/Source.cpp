@@ -4,9 +4,10 @@
 #include <iostream>
 #include "Node.h"
 #include "NodeManager.h"
+#include "graph.h"
 
-const int nodeCount = 25;
-const int populationSize = 50;
+int nodeCount = 15;
+int populationSize = 50;
 
 const int windowWidth = 1200, windowHeight = 800;
 const int displayWidth = 800, displayHeight = 600;
@@ -153,8 +154,21 @@ void SolveWithGA(std::vector<Route> &routes) {
 
 int main()
 {
-    sf::RenderWindow window(sf::VideoMode(windowWidth, windowHeight), "Travelling Salesman Problem");   
+    //fetch values
+    std::cout << "===Traveling Salesman Problem===\n--------------------------------\nSolved with genetic algorithm.\n";
+    std::cout << "To reset nodes press R.\n";
+    std::cout << "\nNode count (return: " << nodeCount << "): ";
+    std::string input;    
+    std::getline(std::cin, input);    
+    if (input == "")
+        std::cout << "\nDefault node count.";
+    else if (std::stoi(input) < 200)
+        nodeCount = std::stoi(input);
+    
+    std::cout << "\Node Count: " << nodeCount;
 
+    //setup
+    sf::RenderWindow window(sf::VideoMode(windowWidth, windowHeight), "Travelling Salesman Problem");
     static Route bestRoute, prevBest;
     static std::vector<Node> nodes;
     static std::vector<Edge> edges;
@@ -163,6 +177,15 @@ int main()
     GenerateCircle(nodes);
     Reset(nodes, edges, routes, bestRoute);
     prevBest = bestRoute;
+
+    sf::Font roboto;
+    if (!roboto.loadFromFile("Roboto-Light.ttf"))
+    {
+        std::cout << "\nfont could not be loaded.\n";
+    }
+
+    //graph
+    graph g = graph(sf::Vector2f(displayWidth, 0), sf::Vector2f(380, 300), "generation", "distance", &roboto);
 
     bool started = false;
     while (window.isOpen())
@@ -179,6 +202,7 @@ int main()
                     GenerateRandomNodes(nodes);
                     Reset(nodes, edges, routes, bestRoute);
                     prevBest = bestRoute;
+                    g.Clear();
                     std::cout << "\n\nPoints reset. Current best distance: " << bestRoute.GetDistance() <<"\n";
                 }
             }            
@@ -190,6 +214,7 @@ int main()
         bestRoute.BuildRoute();
         if (bestRoute.GetDistance() < prevBest.GetDistance()) {
             std::cout << "\nbest distance: " << bestRoute.GetDistance();
+            g.AddPoint(bestRoute.GetDistance());
             prevBest = bestRoute;
         }
        
@@ -198,8 +223,9 @@ int main()
         for (auto& e : edges) { e.Draw(window); }
         bestRoute.Draw(window);
         for (auto& n : nodes) { n.Draw(window); }               
+        
+        g.Draw(window);
         window.display();
-
         if(!started) started = true;
     }
 

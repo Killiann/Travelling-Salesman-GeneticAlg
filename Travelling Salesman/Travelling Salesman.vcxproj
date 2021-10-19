@@ -151,11 +151,13 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="graph.cpp" />
     <ClCompile Include="linearAlgebra.cpp" />
     <ClCompile Include="NodeManager.cpp" />
     <ClCompile Include="Source.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="graph.h" />
     <ClInclude Include="linearAlgebra.h" />
     <ClInclude Include="Node.h" />
     <ClInclude Include="NodeManager.h" />
