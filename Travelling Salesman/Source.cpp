@@ -5,12 +5,13 @@
 #include "Node.h"
 #include "NodeManager.h"
 #include "graph.h"
+#include "display.h"
 
 int nodeCount = 15;
 int populationSize = 50;
 
 const int windowWidth = 1200, windowHeight = 800;
-const int displayWidth = 800, displayHeight = 600;
+const int displayWidth = 800, displayHeight = 800;
 const int padding = 50;
 const float radius = 250;
 
@@ -187,6 +188,16 @@ int main()
     //graph
     graph g = graph(sf::Vector2f(displayWidth, 0), sf::Vector2f(380, 300), "generation", "distance", &roboto);
 
+    //content
+    display d = display(sf::Vector2f(displayWidth, 350), sf::Vector2f(400, 450), &roboto);
+    int generationCounter = 0;
+
+    d.AddValuePair("Node Count: ", std::to_string(nodeCount));
+    d.AddValuePair("Population Size: ", std::to_string(populationSize));
+    d.AddValuePair("Edge Count: ", std::to_string(edges.size()));
+    d.AddValuePair("Solver: ", "Genetic Algorithm");
+    d.AddValuePair("Successful Generation: ", "0");
+
     bool started = false;
     while (window.isOpen())
     {
@@ -203,6 +214,8 @@ int main()
                     Reset(nodes, edges, routes, bestRoute);
                     prevBest = bestRoute;
                     g.Clear();
+                    generationCounter = 0;
+                    d.UpdateValue(4, "0");
                     std::cout << "\n\nPoints reset. Current best distance: " << bestRoute.GetDistance() <<"\n";
                 }
             }            
@@ -216,6 +229,7 @@ int main()
             std::cout << "\nbest distance: " << bestRoute.GetDistance();
             g.AddPoint(bestRoute.GetDistance());
             prevBest = bestRoute;
+            d.UpdateValue(4, std::to_string(++generationCounter));
         }
        
         //draw
@@ -225,6 +239,8 @@ int main()
         for (auto& n : nodes) { n.Draw(window); }               
         
         g.Draw(window);
+        d.Draw(window);
+
         window.display();
         if(!started) started = true;
     }
